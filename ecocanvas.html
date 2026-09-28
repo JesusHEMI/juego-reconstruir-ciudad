@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EcoCanvas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1b1b2f;--bg:#8fd3ff;--acc:#ffd93b}
+body[data-n="1"]{--bg:#ff8fc7;--acc:#19e3f0}
+body[data-n="2"]{--bg:#a8e063;--acc:#ff9f1c}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Baloo 2','Fredoka','Trebuchet MS',system-ui,sans-serif;font-weight:600;color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:18px 14px 30px;background:var(--bg) radial-gradient(circle,rgba(255,255,255,.4) 2.5px,transparent 3px) 0 0/24px 24px;transition:background-color .8s}
+header{width:100%;max-width:880px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+h1{margin:0;font-size:clamp(2.4rem,7vw,3.6rem);line-height:1;color:#fff;-webkit-text-stroke:3px var(--ink);paint-order:stroke fill;text-shadow:4px 4px 0 var(--ink);transform:rotate(-2deg)}
+#nivel{background:#fff;border:3px solid var(--ink);border-radius:30px;padding:6px 16px;font-size:.95rem;box-shadow:4px 4px 0 var(--ink)}
+main{width:100%;max-width:880px}
+#barra{height:24px;background:#fff;border:3px solid var(--ink);border-radius:14px;overflow:hidden;box-shadow:4px 4px 0 var(--ink)}
+#relleno{height:100%;width:0;background:repeating-linear-gradient(-45deg,var(--acc) 0 12px,#fff8 12px 24px);background-size:34px 34px;animation:rayas 1.2s linear infinite;transition:width .6s cubic-bezier(.3,1.5,.5,1);border-right:3px solid var(--ink)}
+@keyframes rayas{to{background-position:34px 0}}
+#pct{font-size:1.05rem;margin:8px 4px 12px}
+#lienzo{width:100%;height:auto;display:block;border:4px solid var(--ink);border-radius:20px;background:#eee;box-shadow:8px 8px 0 var(--ink)}
+.zona-pintable{transition:fill .8s ease,filter .2s;cursor:pointer}
+.zona-pintable:hover{filter:brightness(1.15)}
+.pop{animation:pop .55s ease-out;transform-box:fill-box;transform-origin:center}
+@keyframes pop{40%{transform:scale(1.1);filter:brightness(1.35)}}
+.alerta{cursor:pointer}
+.alerta circle{stroke:#fff;stroke-width:3;filter:drop-shadow(0 0 7px #ff2d2d);animation:pulso 1s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.alerta text{fill:#fff;font:bold 19px 'Baloo 2',sans-serif;text-anchor:middle;pointer-events:none}
+@keyframes pulso{50%{transform:scale(1.3)}}
+#msg{margin:18px 0 14px;background:#fff;border:3px solid var(--ink);border-radius:16px;padding:8px 16px;font-size:1rem;box-shadow:4px 4px 0 var(--ink);min-height:2.4em}
+#paleta{display:flex;gap:12px;flex-wrap:wrap}
+.sw{display:flex;align-items:center;gap:10px;padding:6px 16px 6px 6px;border:3px solid var(--ink);border-radius:18px;background:#fff;font:inherit;font-size:1rem;color:var(--ink);cursor:pointer;box-shadow:4px 4px 0 var(--ink);transition:transform .12s,box-shadow .12s}
+.sw:hover:not(.locked){transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+.sw i{width:38px;height:38px;border-radius:12px;border:3px solid var(--ink);display:grid;place-items:center;font-style:normal;font-size:.9rem;box-shadow:inset -4px -4px 0 rgba(0,0,0,.18),inset 4px 4px 0 rgba(255,255,255,.45)}
+.sw.sel{background:var(--acc);transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.sw.locked{cursor:not-allowed;background:repeating-linear-gradient(-45deg,#e6e6e6 0 8px,#f5f5f5 8px 16px);color:#777}
+.sw.locked i{background:#bbb!important}
+.sw:focus-visible,button:focus-visible,.alerta:focus-visible{outline:4px solid #fff;outline-offset:2px}
+dialog{border:4px solid var(--ink);border-radius:22px;max-width:460px;width:92%;background:#fff;color:var(--ink);padding:22px;box-shadow:8px 8px 0 var(--ink);font-family:inherit}
+dialog[open]{animation:entra .3s cubic-bezier(.3,1.6,.5,1)}
+@keyframes entra{from{transform:scale(.7) rotate(-3deg);opacity:0}}
+dialog::backdrop{background:rgba(27,27,47,.6);backdrop-filter:blur(3px)}
+dialog h3{display:inline-block;margin:0 0 8px;font-size:.85rem;background:var(--acc);border:2px solid var(--ink);border-radius:20px;padding:2px 12px}
+dialog p.q{font-size:1.25rem;line-height:1.25;margin:6px 0 14px}
+.op{display:block;width:100%;text-align:left;margin:10px 0;padding:10px 14px;font:inherit;font-size:1rem;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:14px;cursor:pointer;box-shadow:3px 3px 0 var(--ink);transition:transform .12s}
+.op:hover{background:var(--acc);transform:translate(-2px,-2px)}
+.op.mal{background:#ff9aa9;animation:tiembla .3s}
+.op.bien{background:#7ee8a2}
+@keyframes tiembla{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+#fb{min-height:1.4em;font-size:1rem;margin:8px 0 0}
+.btn{font:inherit;font-size:1.05rem;background:var(--acc);color:var(--ink);border:3px solid var(--ink);border-radius:14px;padding:8px 22px;cursor:pointer;margin-top:10px;box-shadow:4px 4px 0 var(--ink);transition:transform .12s,box-shadow .12s}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+#fin{position:fixed;inset:0;background:rgba(27,27,47,.6);backdrop-filter:blur(3px);display:none;place-items:center;z-index:5}
+#fin.on{display:grid}
+#fin div{background:#fff;border:4px solid var(--ink);border-radius:24px;padding:28px;max-width:430px;text-align:center;box-shadow:8px 8px 0 var(--ink);animation:entra .4s cubic-bezier(.3,1.6,.5,1)}
+#fin h2{margin:0 0 8px;font-size:1.8rem}
+.conf{position:fixed;top:-20px;width:10px;height:16px;z-index:9;border:2px solid var(--ink);animation:cae 2.6s ease-in forwards}
+@keyframes cae{to{transform:translateY(105vh) rotate(var(--r))}}
+@media (prefers-reduced-motion:reduce){.conf{display:none}#relleno{animation:none}}
+/* Animaciones post-restauración */
+.vida{opacity:0;transition:opacity 1s}
+.animar .vida{opacity:1}
+.red{transition:opacity 1s}.animar .red{opacity:0}
+.smog{transition:opacity 1.2s}.smog.limpio{opacity:0}
+.animar .tram{animation:tram 8s linear infinite}
+.animar .ave{animation:ave 9s linear infinite}
+.animar .spin{animation:spin 3s linear infinite}
+.spin{transform-origin:560px 190px}
+.animar .pez{animation:nada 10s linear infinite}
+.animar .sway{animation:sway 2s ease-in-out infinite alternate}
+.animar .crece{animation:crece 1.8s ease-out both}
+.animar .animal{animation:asoma 2.5s ease-in-out infinite alternate}
+.sway,.crece{transform-box:fill-box;transform-origin:50% 100%}
+@keyframes tram{from{transform:translateX(-90px)}to{transform:translateX(650px)}}
+@keyframes ave{from{transform:translate(-40px,60px)}50%{transform:translate(300px,30px)}to{transform:translate(650px,60px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes nada{from{transform:translate(-70px,var(--y))}to{transform:translate(680px,var(--y))}}
+@keyframes sway{from{transform:rotate(-7deg)}to{transform:rotate(7deg)}}
+@keyframes crece{from{transform:scale(.2)}to{transform:scale(1)}}
+@keyframes asoma{from{transform:translateY(34px)}to{transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){.alerta circle,.animar *{animation-duration:0s!important}}
+
+/* ===== PLANTILLA MÓVIL (base, una columna) ===== */
+main{display:grid;gap:12px;grid-template-columns:minmax(0,1fr);grid-template-areas:"st" "cv" "ms" "pl" "dt"}
+.stats{grid-area:st}#escena{grid-area:cv;position:relative}#msg{grid-area:ms;margin:0}#paleta{grid-area:pl}#dato{grid-area:dt}
+#escena canvas{position:absolute;left:0;top:0;width:100%!important;height:100%!important;pointer-events:none;border-radius:20px}
+#dato{background:#fff;border:3px solid var(--ink);border-radius:16px;padding:12px 16px;box-shadow:4px 4px 0 var(--ink)}
+#dato p{margin:4px 0 8px;font-size:.98rem;line-height:1.25}
+#dato .acc{display:flex;gap:10px;flex-wrap:wrap}#dato .btn{margin:0;padding:6px 14px;font-size:.95rem}
+footer{width:100%;max-width:880px;margin-top:30px;background:#fff;border:4px solid var(--ink);border-radius:20px;box-shadow:6px 6px 0 var(--ink);padding:16px 18px}
+footer h2{margin:0 0 10px;font-size:1.6rem}
+.refs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.refs h3{margin:0 0 6px;font-size:1.05rem}
+.refs ul{margin:0;padding-left:18px}.refs li{margin:5px 0}
+.refs a{color:var(--ink);text-decoration-thickness:3px;text-decoration-color:var(--acc);text-underline-offset:3px;word-break:break-word}
+.refs a:hover{background:var(--acc)}
+@media (max-width:899px){
+ body{padding:10px 10px 20px}
+ h1{font-size:2.3rem}
+ #nivel{font-size:.8rem;padding:4px 12px}
+ #lienzo{border-radius:16px;box-shadow:5px 5px 0 var(--ink)}
+ #paleta{position:sticky;bottom:8px;z-index:4;flex-wrap:nowrap;overflow-x:auto;padding:10px;background:#fff;border:3px solid var(--ink);border-radius:20px;box-shadow:4px 4px 0 var(--ink)}
+ .sw{flex:0 0 auto;min-height:48px}
+ .op{padding:14px}
+}
+/* ===== PLANTILLA PC (dos columnas: lienzo grande + panel lateral) ===== */
+@media (min-width:900px){
+ body{padding:28px 32px 44px}
+ header,main,footer{max-width:1180px}
+ main{grid-template-columns:minmax(0,1fr) 320px;grid-template-areas:"cv st" "cv ms" "cv pl" "cv dt";grid-template-rows:auto auto auto 1fr;gap:18px 28px;align-items:start}
+ #paleta{flex-direction:column}
+ .sw{width:100%}
+ #msg{font-size:1.05rem}
+}
+</style>
+</head>
+<body>
+<header><h1>EcoCanvas</h1><div id="nivel"></div></header>
+<main>
+  <div class="stats"><div id="barra"><div id="relleno"></div></div><div id="pct">0% restaurado</div></div>
+  <div id="escena"><svg id="lienzo" viewBox="0 0 600 400" role="img" aria-label="Ilustración a restaurar"></svg></div>
+  <div id="msg"></div>
+  <div id="paleta"></div>
+  <div id="dato"><b>¿Sabías que…?</b><p id="dt"></p><div class="acc"><button class="btn" id="otro">Otro dato</button><button class="btn" id="sorpresa">🎲 Sorpresa</button></div></div>
+</main>
+
+<footer id="referencias">
+  <h2>Referencias</h2>
+  <div class="refs">
+    <section><h3>Agenda 2030 (ONU)</h3><ul>
+      <li><a href="https://sdgs.un.org/es/goals" target="_blank" rel="noopener noreferrer">Los 17 Objetivos de Desarrollo Sostenible</a></li>
+      <li><a href="https://sdgs.un.org/es/goals/goal11" target="_blank" rel="noopener noreferrer">ODS 11: Ciudades y comunidades sostenibles</a></li>
+      <li><a href="https://sdgs.un.org/es/goals/goal14" target="_blank" rel="noopener noreferrer">ODS 14: Vida submarina</a></li>
+      <li><a href="https://sdgs.un.org/es/goals/goal15" target="_blank" rel="noopener noreferrer">ODS 15: Vida de ecosistemas terrestres</a></li>
+    </ul></section>
+    <section><h3>Tecnología y algoritmos</h3><ul>
+      <li><a href="https://p5js.org/" target="_blank" rel="noopener noreferrer">p5.js</a> (partículas y bandadas)</li>
+      <li><a href="https://natureofcode.com/" target="_blank" rel="noopener noreferrer">The Nature of Code</a>, de Daniel Shiffman</li>
+      <li><a href="https://developer.mozilla.org/es/docs/Web/SVG" target="_blank" rel="noopener noreferrer">MDN: SVG</a></li>
+      <li><a href="https://developer.mozilla.org/es/docs/Web/HTML/Element/dialog" target="_blank" rel="noopener noreferrer">MDN: elemento dialog</a></li>
+      <li><a href="https://fonts.google.com/specimen/Baloo+2" target="_blank" rel="noopener noreferrer">Fuente Baloo 2</a></li>
+    </ul></section>
+  </div>
+</footer>
+
+<dialog id="dlg">
+  <h3 id="dods"></h3>
+  <p class="q" id="qt"></p>
+  <div id="ops"></div>
+  <p id="fb"></p>
+  <button class="btn" id="cerrar">Cerrar</button>
+</dialog>
+
+<div id="fin"><div><h2 id="ft"></h2><p id="fp"></p><button class="btn" id="fbtn"></button></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+// ---------- Datos de niveles ----------
+const NIVELES=[
+{n:'Nivel 1 · La Ciudad de Cemento',ods:'ODS 11 · Ciudades y comunidades sostenibles',gris:'#9b9b9b',
+ colores:[['azul','Azul','#7ec8f0'],['verde','Verde','#4caf50'],['amarillo','Amarillo','#ffd93b']],
+ preguntas:[
+  ['¿Qué medida reduce más el tráfico y la contaminación del aire en una ciudad?',['Más autos particulares','Un transporte público eficiente','Más autopistas'],1,300,345],
+  ['¿En qué consiste el reciclaje urbano?',['Separar residuos para darles nueva vida','Mezclar toda la basura','Quemar los desechos'],0,200,268],
+  ['¿Cuál de estas es una energía renovable?',['Carbón','Petróleo','Solar'],2,95,105]],
+ svg:`<rect x="0" y="0" width="600" height="400" fill="#c8c8c8"/>
+<rect class="zona-pintable" data-color-target="azul" data-fill="#7ec8f0" data-clears="smog" x="0" y="0" width="600" height="280"/>
+<g fill="#6f6f6f"><rect x="40" y="150" width="80" height="140"/><rect x="140" y="110" width="70" height="180"/><rect x="230" y="170" width="90" height="120"/><rect x="340" y="130" width="80" height="160"/><rect x="440" y="160" width="100" height="130"/></g>
+<rect x="60" y="120" width="14" height="30" fill="#4d4d4d"/>
+<g fill="#5a5a5a"><rect x="60" y="180" width="14" height="14"/><rect x="90" y="180" width="14" height="14"/><rect x="160" y="150" width="14" height="14"/><rect x="250" y="200" width="14" height="14"/><rect x="360" y="170" width="14" height="14"/></g>
+<rect class="zona-pintable" data-color-target="verde" data-fill="#4caf50" x="36" y="140" width="88" height="10"/>
+<rect class="zona-pintable" data-color-target="verde" data-fill="#5fbf5a" x="136" y="100" width="78" height="10"/>
+<rect class="zona-pintable" data-color-target="verde" data-fill="#43a047" x="336" y="120" width="88" height="10"/>
+<rect class="zona-pintable" data-color-target="amarillo" data-fill="#ffd93b" x="245" y="225" width="60" height="22"/>
+<rect class="zona-pintable" data-color-target="amarillo" data-fill="#ffca28" x="350" y="215" width="55" height="22"/>
+<rect class="zona-pintable" data-color-target="amarillo" data-fill="#ffd93b" x="455" y="205" width="70" height="22"/>
+<rect x="0" y="290" width="600" height="110" fill="#555"/><rect x="0" y="340" width="600" height="5" fill="#888"/>
+<g class="smog" fill="#555" opacity=".55"><circle cx="70" cy="90" r="26"/><circle cx="100" cy="70" r="30"/><circle cx="130" cy="60" r="24"/><circle cx="200" cy="50" r="30"/></g>
+<g class="vida tram"><rect x="0" y="305" width="70" height="26" rx="5" fill="#e53935"/><rect x="8" y="311" width="14" height="10" fill="#fff"/><rect x="28" y="311" width="14" height="10" fill="#fff"/><rect x="48" y="311" width="14" height="10" fill="#fff"/></g>
+<g class="vida ave"><path d="M0 0q8-9 16 0q8-9 16 0" stroke="#333" stroke-width="2" fill="none"/></g>
+<g class="vida"><line x1="560" y1="190" x2="560" y2="290" stroke="#fff" stroke-width="5"/><g class="spin" stroke="#fff" stroke-width="4"><line x1="560" y1="190" x2="560" y2="145"/><line x1="560" y1="190" x2="599" y2="212"/><line x1="560" y1="190" x2="521" y2="212"/></g></g>`},
+
+{n:'Nivel 2 · El Arrecife Fantasma',ods:'ODS 14 · Vida submarina',gris:'#e4e4e0',
+ colores:[['rosa','Rosa neón','#ff4fa3'],['naranja','Naranja neón','#ff8a1f'],['cian','Cian neón','#19e3f0']],
+ preguntas:[
+  ['¿De dónde vienen muchos de los microplásticos del mar?',['De las conchas rotas','De plásticos que se fragmentan al llegar al océano','De la sal marina'],1,110,195],
+  ['¿Qué es la sobrepesca?',['Pescar con caña','Criar peces en casa','Pescar más rápido de lo que las poblaciones se recuperan'],2,360,190],
+  ['¿Qué causa la acidificación de los océanos?',['El exceso de CO₂ que absorben','Las mareas','La luz del sol'],0,300,80]],
+ svg:`<rect width="600" height="400" fill="#b5c3c8"/>
+<path d="M0 340Q150 310 300 335T600 320V400H0Z" fill="#a39b8c"/>
+<g class="zona-grupo">
+<rect class="zona-pintable" data-color-target="rosa" data-fill="#ff4fa3" x="80" y="230" width="30" height="105" rx="15"/>
+<rect class="zona-pintable" data-color-target="rosa" data-fill="#ff6bb5" x="120" y="265" width="24" height="70" rx="12"/>
+<circle class="zona-pintable" data-color-target="rosa" data-fill="#ff4fa3" cx="245" cy="300" r="35"/>
+<rect class="zona-pintable" data-color-target="naranja" data-fill="#ff8a1f" x="330" y="220" width="28" height="112" rx="14"/>
+<rect class="zona-pintable" data-color-target="naranja" data-fill="#ffa040" x="370" y="255" width="24" height="78" rx="12"/>
+<circle class="zona-pintable" data-color-target="naranja" data-fill="#ff8a1f" cx="470" cy="305" r="30"/>
+<ellipse class="zona-pintable sway" data-color-target="cian" data-fill="#19e3f0" cx="170" cy="332" rx="28" ry="16"/>
+<ellipse class="zona-pintable sway" data-color-target="cian" data-fill="#3ef0fa" cx="410" cy="338" rx="28" ry="16"/>
+<ellipse class="zona-pintable sway" data-color-target="cian" data-fill="#19e3f0" cx="545" cy="330" rx="26" ry="15"/></g>
+<g class="red" stroke="#777" stroke-width="2" fill="none"><path d="M0 0L200 120M60 0L260 130M140 0L340 140M0 60L120 170M240 0L420 90"/><path d="M0 40Q120 60 240 30M50 90Q160 110 300 70"/></g>
+<g class="vida pez" style="--y:110px"><ellipse cx="0" cy="0" rx="16" ry="8" fill="#ff4fa3"/><path d="M14 0l14-8v16z" fill="#ff4fa3"/></g>
+<g class="vida pez" style="--y:200px;animation-delay:-4s"><ellipse cx="0" cy="0" rx="18" ry="9" fill="#ff8a1f"/><path d="M16 0l14-9v18z" fill="#ff8a1f"/></g>
+<g class="vida pez" style="--y:260px;animation-delay:-7s"><ellipse cx="0" cy="0" rx="14" ry="7" fill="#19e3f0"/><path d="M12 0l12-7v14z" fill="#19e3f0"/></g>`},
+
+{n:'Nivel 3 · El Bosque Silencioso',ods:'ODS 15 · Ecosistemas terrestres',gris:'#a9a9a2',
+ colores:[['tierra','Tierra','#8b5a2b'],['profundo','Verde profundo','#1b6b35'],['musgo','Verde musgo','#6a9a2f']],
+ preguntas:[
+  ['¿Qué provoca la deforestación?',['La tala y quema de bosques para agricultura y madera','La lluvia','Los nidos de aves'],0,180,150],
+  ['¿Qué ayuda más a proteger a las especies en peligro?',['Cazarlas menos de noche','Conservar sus hábitats','Trasladarlas a las ciudades'],1,330,265],
+  ['¿Por qué ayuda plantar árboles?',['Dan sombra a los autos','Solo sirven de adorno','Absorben CO₂ y protegen el suelo'],2,500,190]],
+ svg:`<rect width="600" height="400" fill="#dcdcd2"/>
+<circle cx="500" cy="70" r="30" fill="#efefe6"/>
+<path class="zona-pintable" data-color-target="tierra" data-fill="#8b5a2b" d="M0 400V260Q150 200 300 250T600 230V400Z"/>
+<rect class="zona-pintable" data-color-target="tierra" data-fill="#6d4c2f" x="100" y="225" width="14" height="60"/>
+<rect class="zona-pintable" data-color-target="tierra" data-fill="#6d4c2f" x="253" y="232" width="14" height="60"/>
+<rect class="zona-pintable" data-color-target="tierra" data-fill="#6d4c2f" x="423" y="215" width="14" height="60"/>
+<circle class="zona-pintable crece" data-color-target="profundo" data-fill="#1b6b35" cx="107" cy="195" r="40"/>
+<circle class="zona-pintable crece" data-color-target="profundo" data-fill="#14582b" cx="260" cy="200" r="42"/>
+<circle class="zona-pintable crece" data-color-target="profundo" data-fill="#1b6b35" cx="430" cy="182" r="40"/>
+<ellipse class="zona-pintable" data-color-target="musgo" data-fill="#6a9a2f" cx="190" cy="305" rx="32" ry="14"/>
+<ellipse class="zona-pintable" data-color-target="musgo" data-fill="#7bab3a" cx="350" cy="320" rx="32" ry="14"/>
+<ellipse class="zona-pintable" data-color-target="musgo" data-fill="#6a9a2f" cx="520" cy="295" rx="32" ry="14"/>
+<g class="vida animal"><circle cx="560" cy="330" r="16" fill="#e67e22"/><path d="M548 320l3-14 7 9zM572 320l-3-14-7 9z" fill="#e67e22"/><circle cx="555" cy="328" r="2" fill="#222"/><circle cx="565" cy="328" r="2" fill="#222"/></g>
+<g class="vida animal" style="animation-delay:-1s"><circle cx="45" cy="345" r="14" fill="#a0522d"/><circle cx="38" cy="334" r="5" fill="#a0522d"/><circle cx="52" cy="334" r="5" fill="#a0522d"/><circle cx="41" cy="343" r="2" fill="#222"/><circle cx="49" cy="343" r="2" fill="#222"/></g>`}
+];
+
+// ---------- Azar: invocar funciones aleatorias ----------
+const invocarAleatoria=lista=>lista[Math.floor(Math.random()*lista.length)]();
+const barajar=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const DATOS=['Los ODS son 17 objetivos que los países de la ONU se comprometieron a alcanzar para 2030.','Más de la mitad de la población mundial vive en ciudades.','Los arrecifes de coral cubren menos del 1% del fondo marino, pero albergan cerca de una cuarta parte de la vida marina.','Los océanos absorben parte del CO₂ que emitimos, y por eso se vuelven más ácidos.','Los bosques cubren alrededor del 31% de la superficie terrestre.','El transporte público reduce las emisiones por persona frente al auto particular.'];
+let ultimoDato=-1;
+function mostrarDato(){let i;do{i=Math.floor(Math.random()*DATOS.length)}while(i===ultimoDato);ultimoDato=i;$('dt').textContent=DATOS[i]}
+const VISUALES=[()=>FX.lluvia(),()=>FX.viento(),()=>FX.destello()];
+const EFECTOS=[...VISUALES,mostrarDato];
+function programarAzar(){setTimeout(()=>{if(!document.hidden)invocarAleatoria(EFECTOS);programarAzar()},6000+Math.random()*5000)}
+
+// ---------- Algoritmos (Nature of Code con p5.js): partículas con fuerzas + bandadas (boids) ----------
+const FX={burst(){},lluvia(){},viento(){},destello(){},flock(){},nivel(){}};
+if(window.p5&&!matchMedia('(prefers-reduced-motion:reduce)').matches)new p5(p=>{
+  const el=$('escena'),ps=[],bs=[],NEON=['#ff4fa3','#ff8a1f','#19e3f0'];
+  let viento=0,volando=false,tipo=0,cols=['#7ec8f0','#4caf50','#ffd93b'],listo=false;
+  class Part{
+    constructor(x,y,c,k,vx,vy){this.pos=p.createVector(x,y);this.vel=p.createVector(vx??p.random(-2,2),vy??p.random(-3,-.5));this.acc=p.createVector();this.life=255;this.c=c;this.k=k;this.s=p.random(4,9)}
+    update(){
+      this.acc.add(0,this.k===1?-.03:.06);                                   // gravedad (las burbujas flotan)
+      this.acc.add((p.noise(this.pos.y*.01,p.frameCount*.01)-.5)*.12+viento,0); // viento con ruido de Perlin
+      this.vel.add(this.acc).limit(6).mult(.99);this.pos.add(this.vel);this.acc.mult(0);this.life-=3}
+    draw(){const c=p.color(this.c);c.setAlpha(this.life);
+      if(this.k===1){p.noFill();p.stroke(c);p.strokeWeight(2);p.circle(this.pos.x,this.pos.y,this.s*1.6);p.noStroke()}
+      else{p.fill(c);p.push();p.translate(this.pos.x,this.pos.y);p.rotate(this.vel.heading());p.ellipse(0,0,this.s*2,this.s);p.pop()}}
+  }
+  class Boid{
+    constructor(){this.pos=p.createVector(p.random(p.width),p.random(p.height*.6));this.vel=p5.Vector.random2D().mult(2);this.acc=p.createVector();this.i=p.floor(p.random(9))}
+    flock(all){
+      const sep=p.createVector(),ali=p.createVector(),coh=p.createVector();let n=0;
+      for(const o of all){if(o===this)continue;const d=p5.Vector.dist(this.pos,o.pos);
+        if(d<70){n++;ali.add(o.vel);coh.add(o.pos);if(d<24)sep.add(p5.Vector.sub(this.pos,o.pos).div(d*d||1))}}
+      if(n){ali.div(n).setMag(2.4).sub(this.vel).limit(.05);coh.div(n).sub(this.pos).setMag(2.4).sub(this.vel).limit(.04);this.acc.add(ali).add(coh).add(sep.mult(30).limit(.12))}
+      const m=p.createVector(p.mouseX,p.mouseY),t=p5.Vector.sub(m,this.pos);            // busca el puntero
+      if(p.mouseX>0&&p.mouseX<p.width&&p.mouseY>0&&p.mouseY<p.height&&t.mag()<170)this.acc.add(t.setMag(.05));
+      this.acc.add(p5.Vector.fromAngle(p.noise(this.pos.x*.01,this.pos.y*.01,p.frameCount*.01)*p.TWO_PI*2).mult(.03)); // vagar
+    }
+    update(){this.vel.add(this.acc).limit(2.6);this.pos.add(this.vel);this.acc.mult(0);
+      this.pos.x=(this.pos.x+p.width)%p.width;this.pos.y=(this.pos.y+p.height)%p.height}
+    draw(){p.push();p.translate(this.pos.x,this.pos.y);p.rotate(this.vel.heading());
+      if(tipo===2){const g=120+120*p.noise(this.i,p.frameCount*.03);p.fill(255,230,80,g*.3);p.circle(0,0,24);p.fill(255,240,120,g);p.circle(0,0,6)}
+      else{p.fill(tipo===1?NEON[this.i%3]:'#ffffff');p.stroke(27,27,47);p.strokeWeight(1.5);p.triangle(10,0,-8,-5,-8,5);p.noStroke()}
+      p.pop()}
+  }
+  const add=(x,y,c,n,k)=>{for(let i=0;i<n&&ps.length<350;i++)ps.push(new Part(x,y,c,k))};
+  p.setup=()=>{p.createCanvas(el.clientWidth,el.clientHeight).parent(el);p.noStroke();listo=true};
+  p.windowResized=()=>p.resizeCanvas(el.clientWidth,el.clientHeight);
+  p.draw=()=>{p.clear();viento*=.98;
+    for(let i=ps.length-1;i>=0;i--){const q=ps[i];q.update();q.draw();if(q.life<=0||q.pos.y>p.height+20||q.pos.y<-40)ps.splice(i,1)}
+    if(volando)for(const b of bs){b.flock(bs);b.update();b.draw()}};
+  Object.assign(FX,{
+    burst:(x,y,c)=>add(x,y,c,26,tipo===1?1:0),
+    lluvia:()=>{if(!listo)return;const sube=tipo===1;for(let i=0;i<40&&ps.length<350;i++)ps.push(new Part(p.random(p.width),sube?p.height:-10,cols[i%cols.length],sube?1:0,p.random(-.5,.5),sube?-1:1))},
+    viento:()=>{viento=p.random([-1,1])*.35},
+    destello:()=>{if(listo)add(p.random(p.width),p.random(p.height*.7),'#ffd93b',18,0)},
+    flock:on=>{volando=on;if(on&&!bs.length)for(let i=0;i<28;i++)bs.push(new Boid())},
+    nivel:(i,c)=>{tipo=i;cols=c;bs.length=0;ps.length=0;volando=false;if(listo)p.resizeCanvas(el.clientWidth,el.clientHeight)}
+  });
+});
+
+// ---------- Estado global ----------
+const S={nivel:0,desbloqueados:[],activo:null,pintadas:0,total:0};
+const svg=$('lienzo'),dlg=$('dlg');
+let alertaActual=null;
+
+function cargarNivel(i){
+  const N=NIVELES[i];
+  document.body.dataset.n=i;
+  FX.nivel(i,NIVELES[i].colores.map(c=>c[2]));
+  Object.assign(S,{nivel:i,desbloqueados:[],activo:null,pintadas:0});
+  svg.classList.remove('animar');
+  svg.innerHTML=N.svg+N.preguntas.map((p,k)=>`<g class="alerta" data-i="${k}" tabindex="0"><circle cx="${p[3]}" cy="${p[4]}" r="15" fill="#e53935"/><text x="${p[3]}" y="${p[4]+6}">!</text></g>`).join('');
+  const zonas=svg.querySelectorAll('.zona-pintable');
+  zonas.forEach(z=>z.style.fill=N.gris);
+  S.total=zonas.length;
+  $('nivel').textContent=N.n+' — '+N.ods;
+  $('fin').classList.remove('on');
+  pintarPaleta();actualizarBarra();
+  mensaje('Haz clic en un punto de alerta rojo para resolver el desafío.');
+}
+
+function pintarPaleta(){
+  const N=NIVELES[S.nivel];
+  $('paleta').innerHTML=N.colores.map(c=>{
+    const ok=S.desbloqueados.includes(c[0]);
+    return `<button class="sw ${ok?'':'locked'} ${S.activo===c[0]?'sel':''}" data-c="${c[0]}" ${ok?'':'aria-disabled="true"'}><i style="background:${c[2]}">${ok?'':'🔒'}</i>${c[1]}</button>`}).join('');
+}
+function actualizarBarra(){
+  const p=Math.round(S.pintadas/S.total*100);
+  $('relleno').style.width=p+'%';$('pct').textContent=p+'% restaurado';
+}
+function mensaje(t){$('msg').textContent=t}
+
+// ---------- Trivia ----------
+function abrirTrivia(i){
+  const N=NIVELES[S.nivel],p=N.preguntas[i];
+  alertaActual=i;
+  $('dods').textContent=N.ods;$('qt').textContent=p[0];$('fb').textContent='';
+  $('ops').innerHTML=barajar(p[1].map((o,k)=>[o,k===p[2]])).map(([o,ok])=>`<button class="op" data-ok="${+ok}">${o}</button>`).join('');
+  dlg.showModal();
+}
+$('ops').addEventListener('click',e=>{
+  const b=e.target.closest('.op');if(!b||b.classList.contains('bien'))return;
+  const N=NIVELES[S.nivel];
+  if(b.dataset.ok==='1'){
+    b.classList.add('bien');
+    const c=N.colores[alertaActual];
+    S.desbloqueados.push(c[0]);S.activo=c[0];setTimeout(()=>invocarAleatoria(VISUALES),1200);
+    svg.querySelector(`.alerta[data-i="${alertaActual}"]`).remove();
+    $('fb').textContent='¡Correcto! Desbloqueaste: '+c[1]+'.';
+    pintarPaleta();
+    mensaje('Con el color '+c[1]+' pinta las zonas del dibujo que le correspondan.');
+    setTimeout(()=>dlg.close(),1100);
+  }else{
+    b.classList.add('mal');$('fb').textContent='Esa no es la respuesta. Prueba otra.';
+  }
+});
+$('cerrar').onclick=()=>dlg.close();
+
+// ---------- Eventos del lienzo y paleta ----------
+svg.addEventListener('click',e=>{
+  const a=e.target.closest('.alerta');
+  if(a){abrirTrivia(+a.dataset.i);return}
+  const z=e.target.closest('.zona-pintable');
+  if(!z)return;
+  if(z.dataset.pintada)return;
+  if(!S.activo){mensaje('Primero desbloquea y elige un color de la paleta.');return}
+  if(z.dataset.colorTarget!==S.activo){mensaje('Ese color no va en esta zona. Prueba con otra.');return}
+  z.style.fill=z.dataset.fill;z.dataset.pintada='1';z.classList.add('pop');{const r=$('escena').getBoundingClientRect();FX.burst(e.clientX-r.left,e.clientY-r.top,z.dataset.fill)}setTimeout(()=>z.classList.remove('pop'),600);
+  if(z.dataset.clears)svg.querySelector('.'+z.dataset.clears).classList.add('limpio');
+  S.pintadas++;actualizarBarra();mensaje('¡Bien! Sigue pintando.');
+  if(S.pintadas===S.total)ganarNivel();
+});
+svg.addEventListener('keydown',e=>{
+  const a=e.target.closest('.alerta');
+  if(a&&(e.key==='Enter'||e.key===' ')){e.preventDefault();abrirTrivia(+a.dataset.i)}
+});
+$('paleta').addEventListener('click',e=>{
+  const b=e.target.closest('.sw');if(!b)return;
+  if(b.classList.contains('locked')){mensaje('Color bloqueado: resuelve un punto de alerta para conseguirlo.');return}
+  S.activo=b.dataset.c;pintarPaleta();
+});
+
+// ---------- Fin de nivel ----------
+function ganarNivel(){
+  svg.classList.add('animar');FX.flock(true);FX.lluvia();
+  const ultimo=S.nivel===NIVELES.length-1;
+  mensaje('¡El ecosistema ha vuelto a la vida!');
+  setTimeout(()=>{
+    $('ft').textContent=ultimo?'¡Restauraste los tres ecosistemas!':'¡Nivel restaurado!';
+    $('fp').textContent=ultimo?'Gracias por ser un Restaurador Ambiental. Cada pequeña acción cuenta para la Agenda 2030.':'Mira cómo cobra vida el dibujo. ¿Listo para el siguiente escenario?';
+    $('fbtn').textContent=ultimo?'Jugar de nuevo':'Siguiente nivel';
+    $('fbtn').onclick=()=>cargarNivel(ultimo?0:S.nivel+1);
+    $('fin').classList.add('on');confeti();
+  },3500);
+}
+
+function confeti(){const cs=['#ff4fa3','#ffd93b','#19e3f0','#4caf50','#ff8a1f'];for(let i=0;i<50;i++){const d=document.createElement('i');d.className='conf';d.style.cssText=`left:${Math.random()*100}vw;background:${cs[i%5]};animation-delay:${Math.random()*.8}s;--r:${Math.random()*720}deg`;document.body.appendChild(d);setTimeout(()=>d.remove(),3600)}}
+$('otro').onclick=mostrarDato;$('sorpresa').onclick=()=>invocarAleatoria(EFECTOS);
+mostrarDato();programarAzar();
+cargarNivel(0);
+</script>
+</body>
+</html>
